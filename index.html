@@ -17,7 +17,10 @@
                 <div class="btn-toolbar mb-2 mb-md-0"><button class="btn btn-primary" id="reload">Reload</button></div>
         </div>
             <div class="row" id="results">
+                <div class="col-12">
+                    <div class="progress" style="height: 30px;"><div class="progress-bar progress-bar-striped progress-bar-animated bg-danger" role="progressbar" aria-valuemax="100" aria-valuemin="0" aria-valuenow="1"></div></div>
                 </div>
+            </div>
     </main>
 </div>
         </div>
@@ -25,28 +28,39 @@
             $(function(){
                 $("#reload").on("click", function(e){
                     e.preventDefault();
-                    $("#results").html("<div class=\"progress\"><div class=\"progress-bar progress-bar-striped progress-bar-animated bg-danger\" role=\"progressbar\" aria-valuenow=\"1\" aria-valuemin=\"0\" aria-valuemax=\"100\" style=\"width: 1%\"></div></div>");
                     $.ajax({
-  xhr: function()
-  {
-    var xhr = new window.XMLHttpRequest();
-    //Download progress
-    xhr.addEventListener("progress", function(evt){
-      if (evt.lengthComputable) {
-        var percentComplete = evt.loaded / evt.total;
-        percentComplete = parseInt(percentComplete * 100);
-        $('.progress-bar').width(percentComplete + '%');
-        console.log(percentComplete);
-      }
-    }, false);
-    return xhr;
-  },
+//   xhr: function()
+//   {
+//     var xhr = new window.XMLHttpRequest();
+//     //Download progress
+//     xhr.addEventListener("progress", function(evt){
+//         console.log("event");if (evt.lengthComputable) {
+//             console.log(evt);
+//         var percentComplete = evt.loaded / evt.total;
+//         percentComplete = parseInt(percentComplete * 100);
+//         $('.progress-bar').width(percentComplete + '%');
+//         console.log(percentComplete);
+//     }
+//     }, false);
+//     return xhr;
+//   },
   type: 'GET',
   url: "/stats",
   success: function(data){
     $("#results").html(data);
   }
 });
+var i = 1;
+var max = 1750;
+    var inter = setInterval(function(){
+        if(i <= max)
+        {$(".progress-bar").width((i*100/max)+'%');
+        i++;}
+        else
+        {$(".progress-bar").width('100%');
+            clearInterval(inter);
+        }
+    },300);
                 });
             });
         </script>

@@ -1,6 +1,9 @@
 const htmlToJson = require("html-to-json"),
   fs = require("fs"),
-  url = require("url");
+  url = require("url"),
+  events = require("events");
+
+var maxProject = 1750;
 
 function getCurrentDate() {
   var date = new Date();
@@ -27,7 +30,7 @@ function sortByKey(array, key) {
 class Scrap {
   constructor() {
     this.min = 1;
-    this.max = 20;
+    this.max = maxProject;
     this.projects = [];
   }
 
@@ -36,7 +39,7 @@ class Scrap {
     return sortByKey(obj, "votesCount");
   }
 
-  async scrapProjects() {
+  async scrapProjects(event) {
     var i = this.min;
     var that = this;
     for (var i = that.min; i <= that.max; i++) {
@@ -44,6 +47,7 @@ class Scrap {
       if (result.project != "") {
         that.projects.push(result);
       }
+      //event(i, that.max);
     }
     return that.projects;
   }
@@ -99,39 +103,50 @@ var server = http.createServer(function(request, response) {
   console.log(path);
   if (path == "/stats") {
     console.log("request received");
-    request.setTimeout(300000);
+    request.setTimeout(maxProject * 500);
     response.writeHead(200, { "Content-Type": "text/html" });
+    // response.writeHead(200, { "Content-Length": 20 });
     var scrap = new Scrap();
-    scrap.scrapProjects().then(res => {
-      var results = sortByKey(res, "votesCount");
-      var htmlResult =
-        "<table class='table'><thead class='thead-dark'><tr><th scope='col'>#</th><th scope='col'>Vote</th><th scope='col'>Project</th><th scope='col'>Company</th><th scope='col'>Category</th><th scope='col'><small>Date: " +
-        getCurrentDate() +
-        "</small></th></tr></thead>";
-      for (var i = 0; i < results.length; i++) {
-        var orga = results[i].organisation.toLowerCase();
-        htmlResult +=
-          "<tr class='" +
-          (orga == "courseur" || orga == "jeanne rives"
-            ? "table-danger"
-            : i < 140 ? "table-success" : "") +
-          "'><th scope='row'>" +
-          (i + 1) +
-          "</th><td>" +
-          results[i].votesCount +
-          "</td><td>" +
-          results[i].project +
-          "</td><td>" +
-          results[i].organisation +
-          "</td><td>" +
-          results[i].category +
-          "</td><td><a href='" +
-          results[i].url +
-          "' target='_blank' class='btn btn-light'>Open</a></td></tr>";
-      }
+    var that = this;
+    scrap
+      .scrapProjects(/*(current, max) => {
+        console.log("emit : " + current);
+        that.emit("progress", {
+          lengthComputable: true,
+          loaded: current,
+          total: max
+        });
+      }*/)
+      .then(res => {
+        var results = sortByKey(res, "votesCount");
+        var htmlResult =
+          "<table class='table'><thead class='thead-dark'><tr><th scope='col'>#</th><th scope='col'>Vote</th><th scope='col'>Project</th><th scope='col'>Company</th><th scope='col'>Category</th><th scope='col'><small>Date: " +
+          getCurrentDate() +
+          "</small></th></tr></thead>";
+        for (var i = 0; i < results.length; i++) {
+          var orga = results[i].organisation.toLowerCase();
+          htmlResult +=
+            "<tr class='" +
+            (orga == "courseur" || orga == "jeanne rives"
+              ? "table-danger"
+              : i < 140 ? "table-success" : "") +
+            "'><th scope='row'>" +
+            (i + 1) +
+            "</th><td>" +
+            results[i].votesCount +
+            "</td><td>" +
+            results[i].project +
+            "</td><td>" +
+            results[i].organisation +
+            "</td><td>" +
+            results[i].category +
+            "</td><td><a href='" +
+            results[i].url +
+            "' target='_blank' class='btn btn-light'>Open</a></td></tr>";
+        }
 
-      response.end(htmlResult, "utf-8");
-    });
+        response.end(htmlResult, "utf-8");
+      });
   } else {
     fs.readFile("./index.html", function(err, file) {
       if (err) {
