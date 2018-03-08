@@ -1,63 +1,76 @@
-<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<html lang="en">
+
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <title>LaFabrique AVIVA - Stats</title>
-            <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
-            <script src="https://code.jquery.com/jquery-3.3.1.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
-<style>
-    body {
-        padding-top: 10px;
-    }
-</style>
-    </head>
-        <body>
-            <div class="container-fluid">
-                <div class="row">
-                    <main class="col-md-12 ml-sm-auto pt-3 px-4" role="main">
-                        <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-3 border-bottom">
-            <h1 class="h2">LaFabrique AVIVA - Stats</h1>
-                <div class="btn-toolbar mb-2 mb-md-0"><button class="btn btn-primary" id="reload">Reload</button></div>
-        </div>
-            <div class="row" id="results">
-                <div class="col-12">
-                    <div class="progress" style="height: 30px;"><div class="progress-bar progress-bar-striped progress-bar-animated bg-danger" role="progressbar" aria-valuemax="100" aria-valuemin="0" aria-valuenow="1"></div></div>
-                </div>
-            </div>
-    </main>
-</div>
-        </div>
-        <script>
-var max = 1750;
-            $(function(){
-                $("#reload").on("click", function(e){
-                    e.preventDefault();
-                    var $this = $(this);
-                    $this.attr("disabled","");
-                    $.ajax({
-  type: 'GET',
-  url: "/stats",
-  timeout: max*300,
-  success: function(data){
-    $("#results").html(data);
-  },
-  error:function(jqXHR, textStatus, errorThrown ){
-    $("#results").html("<h2 class=\"text-danger\">"+errorThrown+"</h2>");
-  },
-  complete:function(){
-    $this.removeAttr("disabled");      
-  }
-});
-var i = 1;
-    var inter = setInterval(function(){
-        if(i <= max)
-        {$(".progress-bar").width((i*100/max)+'%');
-        i++;}
-        else
-        {$(".progress-bar").width('100%');
-            clearInterval(inter);
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm"
+        crossorigin="anonymous">
+    <script src="https://code.jquery.com/jquery-3.3.1.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8="
+        crossorigin="anonymous"></script>
+    <style>
+        body {
+            padding-top: 10px;
         }
-    },200);
+    </style>
+</head>
+
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <main class="col-md-12 ml-sm-auto pt-3 px-4" role="main">
+                <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-3 border-bottom">
+                    <h1 class="h2">LaFabrique AVIVA - Stats</h1>
+                    <div class="btn-toolbar mb-2 mb-md-0">
+                        <button class="btn btn-primary" id="reload">Reload</button>
+                    </div>
+                </div>
+                <div class="row" id="results">
+                    <div class="col-12">
+                        <div class="progress" style="height: 30px;">
+                            <div class="progress-bar progress-bar-striped progress-bar-animated bg-danger" role="progressbar" aria-valuemax="100" aria-valuemin="0"
+                                aria-valuenow="1"></div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+    <script>
+        var max = 1582;
+        $(function () {
+            $("#reload").on("click", function (e) {
+                e.preventDefault();
+                var $this = $(this);
+                $this.attr("disabled", "");
+                $.ajax({
+                    type: 'GET',
+                    url: "/stats",
+                    timeout: max * 300,
+                    success: function (data) {
+                        $("#results").html(data);
+                    },
+                    error: function (jqXHR, textStatus, errorThrown) {
+                        $("#results").html("<h2 class=\"text-danger\">" + errorThrown + "</h2>");
+                    },
+                    complete: function () {
+                        $this.removeAttr("disabled");
+                    }
                 });
+                var i = 1;
+                var inter = setInterval(function () {
+                    if (i <= max) {
+                        $(".progress-bar").width((i * 100 / max) + '%');
+                        i++;
+                    }
+                    else {
+                        $(".progress-bar").width('100%');
+                        clearInterval(inter);
+                    }
+                }, 150);
             });
-        </script>
-        </body>
-        </html>
+        });
+    </script>
+</body>
+
+</html>

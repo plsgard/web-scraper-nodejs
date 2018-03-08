@@ -3,7 +3,7 @@ const htmlToJson = require("html-to-json"),
   url = require("url"),
   events = require("events");
 
-var maxProject = 1750;
+var maxProject = 1691;
 
 function getCurrentDate() {
   var date = new Date();
@@ -20,7 +20,7 @@ function getCurrentDate() {
 }
 
 function sortByKey(array, key) {
-  return array.sort(function(a, b) {
+  return array.sort(function (a, b) {
     var x = a[key];
     var y = b[key];
     return y - x;
@@ -29,8 +29,9 @@ function sortByKey(array, key) {
 
 class Scrap {
   constructor() {
-    this.min = 1;
-    this.max = maxProject;
+    this.activeProjects = Object.values(JSON.parse(fs.readFileSync("projects.json", "utf-8")));
+    this.min = 0;//this.activeProjects != null && this.activeProjects.length > 0 ? 0 : 1;
+    this.max = this.activeProjects.length;//this.activeProjects != null && this.activeProjects.length > 0 ? this.activeProjects.length - 1 : maxProject;
     this.projects = [];
   }
 
@@ -40,14 +41,16 @@ class Scrap {
   }
 
   async scrapProjects() {
-    var i = this.min;
     var that = this;
-    for (var i = that.min; i <= that.max; i++) {
-      let result = await this.getProject(i);
+    // fs.writeFile("./projects.json", "[");
+    for (var i = that.min; i < that.max; i++) {
+      let result = await this.getProject(that.activeProjects[i]);
       if (result.project != "") {
         that.projects.push(result);
+        // fs.appendFile("./projects.json", "," + i);
       }
     }
+    // fs.appendFile("./projects.json", "]");
     return that.projects;
   }
 
@@ -57,34 +60,34 @@ class Scrap {
         uri: "https://lafabrique-france.aviva.com/voting/projet/vue/30-" + id
       },
       {
-        project: function($project) {
+        project: function ($project) {
           return $project
             .find(".project-details h1")
             .text()
             .replace("\\n", "")
             .trim();
         },
-        organisation: function($project) {
+        organisation: function ($project) {
           return $project
             .find(".project-top-container h2")
             .text()
             .replace("\\n", "")
             .trim();
         },
-        category: function($project) {
+        category: function ($project) {
           return $project
             .find(".project-category h4")
             .text()
             .replace("\\n", "")
             .trim();
         },
-        votesCount: function($doc) {
+        votesCount: function ($doc) {
           var val = $doc.find(".votes-count").html();
           return val && val != undefined && val != ""
             ? Number(val.replace(/&#xA0;/g, ""))
             : null;
         },
-        url: function() {
+        url: function () {
           return (
             "https://lafabrique-france.aviva.com/voting/projet/vue/30-" + id
           );
@@ -97,7 +100,7 @@ class Scrap {
 
 var http = require("http");
 
-var server = http.createServer(function(request, response) {
+var server = http.createServer(function (request, response) {
   var path = url.parse(request.url).pathname;
   if (path == "/stats") {
     request.setTimeout(maxProject * 300);
@@ -135,7 +138,7 @@ var server = http.createServer(function(request, response) {
       response.end(htmlResult, "utf-8");
     });
   } else {
-    fs.readFile("./index.html", function(err, file) {
+    fs.readFile("./index.html", function (err, file) {
       if (err) {
         console.log(err);
         return;
