@@ -26,7 +26,7 @@ function sortByKey(array, key) {
 class Scrap {
   constructor() {
     this.min = 1;
-    this.max = 10;
+    this.max = 1750;
     this.projects = [];
   }
 
@@ -67,6 +67,13 @@ class Scrap {
             .replace("\\n", "")
             .trim();
         },
+        category: function($project) {
+          return $project
+            .find(".project-category h4")
+            .text()
+            .replace("\\n", "")
+            .trim();
+        },
         votesCount: function($doc) {
           var val = $doc.find(".votes-count").html();
           return val && val != undefined && val != ""
@@ -84,21 +91,22 @@ class Scrap {
   }
 }
 
-var scrap = new Scrap();
-scrap.scrapProjects().then(res => {
-  var htmlFileName = "./index.html";
-  var results = sortByKey(res, "votesCount");
-  fs.writeFile(
-    htmlFileName,
-    "<html><head><link rel=\"stylesheet\" href=\"https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css\" integrity=\"sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm\" crossorigin=\"anonymous\"></head><body><table class='table'><thead class='thead-dark'><tr><th scope='col'>#</th><th scope='col'>Vote</th><th scope='col'>Project</th><th scope='col'>Company</th><th scope='col'><small>Date: " +
+var http = require("http");
+
+var server = http.createServer(function(request, response) {
+  request.setTimeout(300000);
+  response.writeHead(200, { "Content-Type": "text/html" });
+  var scrap = new Scrap();
+  scrap.scrapProjects().then(res => {
+    var results = sortByKey(res, "votesCount");
+    var htmlResult =
+      "<html><head><link rel=\"stylesheet\" href=\"https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css\" integrity=\"sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm\" crossorigin=\"anonymous\"></head><body><table class='table'><thead class='thead-dark'><tr><th scope='col'>#</th><th scope='col'>Vote</th><th scope='col'>Project</th><th scope='col'>Company</th><th scope='col'>Category</th><th scope='col'><small>Date: " +
       getCurrentDate() +
-      "</small></th></tr></thead>"
-  );
-  for (var i = 0; i < results.length; i++) {
-    var orga = results[i].organisation.toLowerCase();
-    fs.appendFile(
-      htmlFileName,
-      "<tr class='" +
+      "</small></th></tr></thead>";
+    for (var i = 0; i < results.length; i++) {
+      var orga = results[i].organisation.toLowerCase();
+      htmlResult +=
+        "<tr class='" +
         (orga == "courseur" || orga == "jeanne rives"
           ? "table-danger"
           : i < 140 ? "table-success" : "") +
@@ -110,9 +118,18 @@ scrap.scrapProjects().then(res => {
         results[i].project +
         "</td><td>" +
         results[i].organisation +
+        "</td><td>" +
+        results[i].category +
         "</td><td><a href='" +
         results[i].url +
-        "' target='_blank' class='btn btn-light'>Open</a></td></tr>"
-    );
-  }
+        "' target='_blank' class='btn btn-light'>Open</a></td></tr>";
+    }
+
+    response.end(htmlResult);
+  });
 });
+
+var port = process.env.PORT || 1337;
+server.listen(port);
+
+console.log("Server running at http://localhost:%d", port);
