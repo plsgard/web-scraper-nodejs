@@ -41,15 +41,18 @@ class Scrap {
     fs.writeFile(fileName, "[");
     var that = this;
     var i = that.min;
+    var prep = "";
     var inter = setInterval(function() {
-      console.log(i);
-      that.getProject(i).done(function(result) {
-        if (result.project != "") {
-          fs.appendFile(fileName, JSON.stringify(result) + ",");
-        }
-      });
-      i++;
-      if (i >= that.max) {
+      if (i <= that.max) {
+        console.log(i);
+        that.getProject(i).done(function(result) {
+          if (result.project != "") {
+            fs.appendFile(fileName, prep + JSON.stringify(result));
+            if (prep == "") prep = ",";
+          }
+        });
+        i++;
+      } else {
         fs.appendFile(fileName, "]");
         clearInterval(inter);
       }
@@ -103,7 +106,9 @@ else {
   var results = scrap.parseResults(jsonFileName);
   fs.writeFile(
     htmlFileName,
-    "<html><head><link rel=\"stylesheet\" href=\"https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css\" integrity=\"sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm\" crossorigin=\"anonymous\"></head><body><table class='table'><thead class='thead-dark'><tr><th scope='col'>#</th><th scope='col'>Vote</th><th scope='col'>Project</th><th scope='col'>Company</th><th scope='col'></th></tr></thead>"
+    "<html><head><link rel=\"stylesheet\" href=\"https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css\" integrity=\"sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm\" crossorigin=\"anonymous\"></head><body><table class='table'><thead class='thead-dark'><tr><th scope='col'>#</th><th scope='col'>Vote</th><th scope='col'>Project</th><th scope='col'>Company</th><th scope='col'><small>Date: " +
+      command +
+      "</small></th></tr></thead>"
   );
   for (var i = 0; i < results.length; i++) {
     var orga = results[i].organisation.toLowerCase();
@@ -126,10 +131,4 @@ else {
         "' target='_blank' class='btn btn-light'>Open</a></td></tr>"
     );
   }
-  fs.appendFile(
-    htmlFileName,
-    "<tfoot><tr><td colspan='5' class='text-left'>" +
-      command +
-      "</td></tr></tfoot></table></body></html>"
-  );
 }
