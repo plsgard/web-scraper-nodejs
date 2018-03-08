@@ -2,21 +2,18 @@
   "name": "web-scraper-nodejs",
   "version": "1.0.0",
   "description": "A simple web scraper in NodeJs",
-  "main": "src/index.js",
+  "main": "index.js",
+  "engines": {
+    "node": ">=6.9.1"
+  },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node index.js"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/plsgard/web-scraper-nodejs.git"
   },
-  "keywords": [
-    "nodejs",
-    "web",
-    "scraper",
-    "web",
-    "scraping"
-  ],
+  "keywords": ["nodejs", "web", "scraper", "web", "scraping"],
   "author": "Pier-Lionel Sgard (hello@plsgd.com)",
   "license": "ISC",
   "bugs": {
