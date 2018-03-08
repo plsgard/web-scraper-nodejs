@@ -26,18 +26,27 @@
 </div>
         </div>
         <script>
+var max = 1750;
             $(function(){
                 $("#reload").on("click", function(e){
                     e.preventDefault();
+                    var $this = $(this);
+                    $this.attr("disabled","");
                     $.ajax({
   type: 'GET',
   url: "/stats",
+  timeout: max*300,
   success: function(data){
     $("#results").html(data);
+  },
+  error:function(jqXHR, textStatus, errorThrown ){
+    $("#results").html("<h2 class=\"text-danger\">"+errorThrown+"</h2>");
+  },
+  complete:function(){
+    $this.removeAttr("disabled");      
   }
 });
 var i = 1;
-var max = 1750;
     var inter = setInterval(function(){
         if(i <= max)
         {$(".progress-bar").width((i*100/max)+'%');
@@ -46,7 +55,7 @@ var max = 1750;
         {$(".progress-bar").width('100%');
             clearInterval(inter);
         }
-    },300);
+    },200);
                 });
             });
         </script>

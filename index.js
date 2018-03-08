@@ -3,7 +3,7 @@ const htmlToJson = require("html-to-json"),
   url = require("url"),
   events = require("events");
 
-var maxProject = 1750;
+var maxProject = 20;
 
 function getCurrentDate() {
   var date = new Date();
@@ -100,7 +100,7 @@ var http = require("http");
 var server = http.createServer(function(request, response) {
   var path = url.parse(request.url).pathname;
   if (path == "/stats") {
-    request.setTimeout(maxProject * 500);
+    request.setTimeout(maxProject * 300);
     response.writeHead(200, { "Content-Type": "text/html" });
     var scrap = new Scrap();
     var that = this;
