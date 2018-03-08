@@ -3,7 +3,7 @@ const htmlToJson = require("html-to-json"),
   url = require("url"),
   events = require("events");
 
-var maxProject = 20;
+var maxProject = 1750;
 
 function getCurrentDate() {
   var date = new Date();
