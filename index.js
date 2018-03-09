@@ -151,3 +151,4 @@ var server = http.createServer(function (request, response) {
 
 var port = process.env.PORT || 1337;
 server.listen(port);
+server.timeout = maxProject * 300;
