@@ -3,7 +3,7 @@ const htmlToJson = require("html-to-json"),
   url = require("url"),
   events = require("events");
 
-var maxProject = 1800;
+var maxProject = 50;
 
 function getCurrentDate() {
   var date = new Date();
@@ -116,39 +116,41 @@ var server = http.createServer(function (request, response) {
         return result;
       }, {});
       var currentDate = getCurrentDate();
-      var htmlGroupResult = "<table class='table table-striped'><thead class='thead-dark'><tr><th scope='col'>Category</th><th scope='col'>#</th><th scope='col'>Vote</th><th scope='col'>Project</th><th scope='col'>Company</th><th scope='col'><small>Date: " +
-        currentDate +
-        "</small></th></tr></thead>";
-      Object.keys(grouped).forEach(element => {
+      var results = sortByKey(res, "votesCount");
+
+      var htmlGroupResult = "<div id='accordion-category'>";
+      Object.keys(grouped).forEach((element, index) => {
         var ordered = sortByKey(grouped[element], "votesCount");
+        htmlGroupResult += `<div class='card'>
+        <div class='card-header' id='headingGroupCat-${index}' style='padding: 0.5rem;'>
+        <h5 class='mb-0'>
+        <button class='btn btn-link' style='font-size: 0.9rem;' data-toggle='collapse' data-target='#cat-${index}' aria-expanded='true' aria-controls='cat-${index}'>${element} (${(ordered.length + " projects ~" + (Math.round(ordered.length * 100 / results.length)))}%)</button></h5>
+        </div>
+        <div id="cat-${index}" class="collapse" aria-labelledby="headingGroupCat">
+          <div class="card-body">`;
+        htmlGroupResult += "<table class='table table-striped resultsByCategory'><thead class='thead-dark'><tr><th scope='col'>#</th><th scope='col'>Vote</th><th scope='col'>Project</th><th scope='col'>Company</th><th scope='col'><small>Date: " +
+          currentDate +
+          "</small></th></tr></thead>";
         for (var i = 0; i < ordered.length; i++) {
           var orga = ordered[i].organisation.toLowerCase();
-          htmlGroupResult += "<tr>" + (i == 0 ? "<th scope='row' rowspan='" + ordered.length + "'>" + element + "</th>" : "") + "<th scope='row' class='" +
+          htmlGroupResult += "<tr class='" +
             (orga == "courseur" || orga == "jeanne rives"
-              ? "table-danger" : "") + "'>" + (i + 1) + "</th><td class='" +
-            (orga == "courseur" || orga == "jeanne rives"
-              ? "table-danger" : "") + "'>" +
+              ? "table-danger" : "") + "'><th scope='row'>" + (i + 1) + "</th><td>" +
             ordered[i].votesCount +
-            "</td><td class='" +
-            (orga == "courseur" || orga == "jeanne rives"
-              ? "table-danger" : "") + "'>" +
+            "</td><td>" +
             ordered[i].project +
-            "</td><td class='" +
-            (orga == "courseur" || orga == "jeanne rives"
-              ? "table-danger" : "") + "'>" +
+            "</td><td>" +
             ordered[i].organisation +
-            "</td><td class='" +
-            (orga == "courseur" || orga == "jeanne rives"
-              ? "table-danger" : "") + "'><a href='" +
+            "</td><td><a href='" +
             ordered[i].url +
             "' target='_blank' class='btn btn-light'>Open</a></td></tr>";
         }
+        htmlGroupResult += "</table></div></div></div><hr/>";
       });
-      htmlGroupResult += "</table>";
+      htmlGroupResult += "</div>";
 
-      var results = sortByKey(res, "votesCount");
       var htmlResult =
-        "<table class='table table-striped'><thead class='thead-dark'><tr><th scope='col'>#</th><th scope='col'>Vote</th><th scope='col'>Project</th><th scope='col'>Company</th><th scope='col'>Category</th><th scope='col'><small>Date: " +
+        "<table id='resultsAll' class='table table-striped'><thead class='thead-dark'><tr><th scope='col'>#</th><th scope='col'>Vote</th><th scope='col'>Project</th><th scope='col'>Company</th><th scope='col'>Category</th><th scope='col'><small>Date: " +
         currentDate +
         "</small></th></tr></thead>";
       for (var i = 0; i < results.length; i++) {
@@ -177,29 +179,29 @@ var server = http.createServer(function (request, response) {
       var finalResult = `
       <div id="accordion">
         <div class="card">
-          <div class="card-header" id="headingGroup">
+          <div class="card-header" id="headingGroup" style="background-color: rgba(0,0,0,.07);">
             <h5 class="mb-0">
               <button class="btn btn-link" data-toggle="collapse" data-target="#groups" aria-expanded="true" aria-controls="groups">
                 Group by Category
               </button>
             </h5>
           </div>
-          <div id="groups" class="collapse" aria-labelledby="headingGroup" data-parent="#accordion">
+          <div id="groups" class="collapse" aria-labelledby="headingGroup">
             <div class="card-body">
               ${htmlGroupResult}
             </div>
           </div>
         </div>
-
+        <hr/>
         <div class="card">
-          <div class="card-header" id="headingList">
+          <div class="card-header" id="headingList" style="background-color: rgba(0,0,0,.07);">
             <h5 class="mb-0">
               <button class="btn btn-link" data-toggle="collapse" data-target="#lists" aria-expanded="true" aria-controls="lists">
-                All projects
+                All projects (${results.length} projects)
               </button>
             </h5>
           </div>
-          <div id="lists" class="collapse" aria-labelledby="headingList" data-parent="#accordion">
+          <div id="lists" class="collapse" aria-labelledby="headingList">
             <div class="card-body">
               ${htmlResult}
             </div>
