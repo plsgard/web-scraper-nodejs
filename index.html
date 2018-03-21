@@ -25,8 +25,8 @@
                         <button class="btn btn-primary" id="reload">Reload</button>
                     </div>
                 </div>
-                <div class="row" id="results">
-                    <div class="col-12">
+                <div class="row">
+                    <div class="col-12" id="results">
                         <div class="progress" style="height: 30px;">
                             <div class="progress-bar progress-bar-striped progress-bar-animated bg-danger" role="progressbar" aria-valuemax="100" aria-valuemin="0"
                                 aria-valuenow="1"></div>
@@ -37,7 +37,7 @@
         </div>
     </div>
     <script>
-        var max = 1582;
+        var max = 1800;
         $(function () {
             $("#reload").on("click", function (e) {
                 e.preventDefault();

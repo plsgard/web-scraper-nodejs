@@ -3,7 +3,7 @@ const htmlToJson = require("html-to-json"),
   url = require("url"),
   events = require("events");
 
-var maxProject = 1691;
+var maxProject = 1800;
 
 function getCurrentDate() {
   var date = new Date();
@@ -29,9 +29,9 @@ function sortByKey(array, key) {
 
 class Scrap {
   constructor() {
-    this.activeProjects = Object.values(JSON.parse(fs.readFileSync("projects.json", "utf-8")));
-    this.min = 0;//this.activeProjects != null && this.activeProjects.length > 0 ? 0 : 1;
-    this.max = this.activeProjects.length;//this.activeProjects != null && this.activeProjects.length > 0 ? this.activeProjects.length - 1 : maxProject;
+    //this.activeProjects = Object.values(JSON.parse(fs.readFileSync("projects.json", "utf-8")));
+    this.min = 1;//this.activeProjects != null && this.activeProjects.length > 0 ? 0 : 1;
+    this.max = maxProject//this.activeProjects.length;//this.activeProjects != null && this.activeProjects.length > 0 ? this.activeProjects.length - 1 : maxProject;
     this.projects = [];
   }
 
@@ -43,8 +43,8 @@ class Scrap {
   async scrapProjects() {
     var that = this;
     // fs.writeFile("./projects.json", "[");
-    for (var i = that.min; i < that.max; i++) {
-      let result = await this.getProject(that.activeProjects[i]);
+    for (var i = that.min; i <= that.max; i++) {
+      let result = await this.getProject(i/*that.activeProjects[i]*/);
       if (result.project != "") {
         that.projects.push(result);
         // fs.appendFile("./projects.json", "," + i);
