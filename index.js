@@ -3,7 +3,7 @@ const htmlToJson = require("html-to-json"),
   url = require("url"),
   events = require("events");
 
-var maxProject = 50;
+var maxProject = 1800;
 
 function getCurrentDate() {
   var date = new Date();
@@ -149,6 +149,7 @@ var server = http.createServer(function (request, response) {
       });
       htmlGroupResult += "</div>";
 
+      var totalVote = 0;
       var htmlResult =
         "<table id='resultsAll' class='table table-striped'><thead class='thead-dark'><tr><th scope='col'>#</th><th scope='col'>Vote</th><th scope='col'>Project</th><th scope='col'>Company</th><th scope='col'>Category</th><th scope='col'><small>Date: " +
         currentDate +
@@ -173,6 +174,8 @@ var server = http.createServer(function (request, response) {
           "</td><td><a href='" +
           results[i].url +
           "' target='_blank' class='btn btn-light'>Open</a></td></tr>";
+
+        totalVote += results[i].votesCount;
       }
       htmlResult += "</table>";
 
@@ -197,7 +200,7 @@ var server = http.createServer(function (request, response) {
           <div class="card-header" id="headingList" style="background-color: rgba(0,0,0,.07);">
             <h5 class="mb-0">
               <button class="btn btn-link" data-toggle="collapse" data-target="#lists" aria-expanded="true" aria-controls="lists">
-                All projects (${results.length} projects)
+                All projects (${results.length} projects - ${totalVote} votes)
               </button>
             </h5>
           </div>

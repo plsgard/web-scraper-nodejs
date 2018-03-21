@@ -27,7 +27,7 @@
                     <h1 class="h2">LaFabrique AVIVA - Stats</h1>
                     <div class="btn-toolbar mb-2 mb-md-0">
                         <form class="form-inline">
-                            <input id="search" class="form-control mr-sm-2" type="search" placeholder="Search" aria-label="Search">
+                            <input id="search" class="form-control mr-sm-2" type="search" placeholder="Search..." aria-label="Search">
                             <button class="btn btn-primary" id="reload">Reload</button>
                         </form>
                     </div>
@@ -46,6 +46,7 @@
     <script>
         var max = 1800;
         $(function () {
+            $("#search").hide();
             $("#search").on("input", function (e) {
                 var searchVal = $(this).val().trim().toLowerCase();
                 if (searchVal === '') {
@@ -73,6 +74,8 @@
                     timeout: max * 300,
                     success: function (data) {
                         $("#results").html(data);
+                        $("#search").show();
+                        $("#reload").hide();
                     },
                     error: function (jqXHR, textStatus, errorThrown) {
                         $("#results").html("<h2 class=\"text-danger\">" + errorThrown + "</h2>");
