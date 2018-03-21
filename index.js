@@ -3,7 +3,7 @@ const htmlToJson = require("html-to-json"),
   url = require("url"),
   events = require("events");
 
-var maxProject = 1800;
+var maxProject = 20;
 
 function getCurrentDate() {
   var date = new Date();
@@ -105,13 +105,51 @@ var server = http.createServer(function (request, response) {
   if (path == "/stats") {
     request.setTimeout(maxProject * 300);
     response.writeHead(200, { "Content-Type": "text/html" });
+
     var scrap = new Scrap();
     var that = this;
     scrap.scrapProjects().then(res => {
+      var groupRes = sortByKey(res, "category");
+      var grouped = groupRes.reduce(function (result, current) {
+        result[current.category] = result[current.category] || [];
+        result[current.category].push(current);
+        return result;
+      }, {});
+      var currentDate = getCurrentDate();
+      var htmlGroupResult = "<table class='table table-striped'><thead class='thead-dark'><tr><th scope='col'>Category</th><th scope='col'>#</th><th scope='col'>Vote</th><th scope='col'>Project</th><th scope='col'>Company</th><th scope='col'><small>Date: " +
+        currentDate +
+        "</small></th></tr></thead>";
+      Object.keys(grouped).forEach(element => {
+        var ordered = sortByKey(grouped[element], "votesCount");
+        for (var i = 0; i < ordered.length; i++) {
+          var orga = ordered[i].organisation.toLowerCase();
+          htmlGroupResult += "<tr>" + (i == 0 ? "<th scope='row' rowspan='" + ordered.length + "'>" + element + "</th>" : "") + "<th scope='row' class='" +
+            (orga == "courseur" || orga == "jeanne rives"
+              ? "table-danger" : "") + "'>" + (i + 1) + "</th><td class='" +
+            (orga == "courseur" || orga == "jeanne rives"
+              ? "table-danger" : "") + "'>" +
+            ordered[i].votesCount +
+            "</td><td class='" +
+            (orga == "courseur" || orga == "jeanne rives"
+              ? "table-danger" : "") + "'>" +
+            ordered[i].project +
+            "</td><td class='" +
+            (orga == "courseur" || orga == "jeanne rives"
+              ? "table-danger" : "") + "'>" +
+            ordered[i].organisation +
+            "</td><td class='" +
+            (orga == "courseur" || orga == "jeanne rives"
+              ? "table-danger" : "") + "'><a href='" +
+            ordered[i].url +
+            "' target='_blank' class='btn btn-light'>Open</a></td></tr>";
+        }
+      });
+      htmlGroupResult += "</table>";
+
       var results = sortByKey(res, "votesCount");
       var htmlResult =
-        "<table class='table'><thead class='thead-dark'><tr><th scope='col'>#</th><th scope='col'>Vote</th><th scope='col'>Project</th><th scope='col'>Company</th><th scope='col'>Category</th><th scope='col'><small>Date: " +
-        getCurrentDate() +
+        "<table class='table table-striped'><thead class='thead-dark'><tr><th scope='col'>#</th><th scope='col'>Vote</th><th scope='col'>Project</th><th scope='col'>Company</th><th scope='col'>Category</th><th scope='col'><small>Date: " +
+        currentDate +
         "</small></th></tr></thead>";
       for (var i = 0; i < results.length; i++) {
         var orga = results[i].organisation.toLowerCase();
@@ -119,7 +157,7 @@ var server = http.createServer(function (request, response) {
           "<tr class='" +
           (orga == "courseur" || orga == "jeanne rives"
             ? "table-danger"
-            : i < 140 ? "table-success" : "") +
+            : "") +
           "'><th scope='row'>" +
           (i + 1) +
           "</th><td>" +
@@ -134,8 +172,41 @@ var server = http.createServer(function (request, response) {
           results[i].url +
           "' target='_blank' class='btn btn-light'>Open</a></td></tr>";
       }
+      htmlResult += "</table>";
 
-      response.end(htmlResult, "utf-8");
+      var finalResult = `
+      <div id="accordion">
+        <div class="card">
+          <div class="card-header" id="headingGroup">
+            <h5 class="mb-0">
+              <button class="btn btn-link" data-toggle="collapse" data-target="#groups" aria-expanded="true" aria-controls="groups">
+                Group by Category
+              </button>
+            </h5>
+          </div>
+          <div id="groups" class="collapse" aria-labelledby="headingGroup" data-parent="#accordion">
+            <div class="card-body">
+              ${htmlGroupResult}
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header" id="headingList">
+            <h5 class="mb-0">
+              <button class="btn btn-link" data-toggle="collapse" data-target="#lists" aria-expanded="true" aria-controls="lists">
+                All projects
+              </button>
+            </h5>
+          </div>
+          <div id="lists" class="collapse" aria-labelledby="headingList" data-parent="#accordion">
+            <div class="card-body">
+              ${htmlResult}
+            </div>
+          </div>
+        </div>
+      </div>`
+      response.end(finalResult, "utf-8");
     });
   } else {
     fs.readFile("./index.html", function (err, file) {
