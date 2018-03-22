@@ -13,6 +13,7 @@
         crossorigin="anonymous"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl"
         crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.2/Chart.bundle.min.js" crossorigin="anonymous"></script>
     <style>
         body {
             padding-top: 10px;
@@ -77,27 +78,14 @@
             font-size: .8rem;
         }
 
-        .thumbnail {
-            position: relative;
-            width: 200px;
-            height: 200px;
-            overflow: hidden;
-        }
-
-        .thumbnail img {
-            position: absolute;
-            left: 50%;
-            top: 50%;
-            height: 100%;
-            width: auto;
-            -webkit-transform: translate(-50%, -50%);
-            -ms-transform: translate(-50%, -50%);
-            transform: translate(-50%, -50%);
-        }
-
-        .thumbnail img.portrait {
-            width: 100%;
-            height: auto;
+        .dot {
+            height: 20px;
+            width: 20px;
+            background-color: #bbb;
+            border-radius: 50%;
+            margin-right: 5px;
+            float: right;
+            margin-top: 9px;
         }
     </style>
 </head>
@@ -134,12 +122,15 @@
         </div>
     </footer>
     <script>
-        var max = 1800;
+        var max = 20;
         var wto;
         $(function () {
             if ($("table").length > 0) {
                 $("#search").show();
                 $(".progress").hide();
+
+                if ($(".category").length > 0)
+                    displayChart();
             }
             else {
                 $("#search").hide();
@@ -202,6 +193,57 @@
 
             });
         });
+
+        function getRandomColor() {
+            var letters = '0123456789ABCDEF';
+            var color = '#';
+            for (var i = 0; i < 6; i++) {
+                color += letters[Math.floor(Math.random() * 16)];
+            }
+            return color;
+        }
+
+
+        function displayChart() {
+            var $categories = $(".category");
+            var datas = [];
+            var labels = [];
+            var colors = [];
+            $categories.each(function () {
+                datas.push($(this).data('percent'));
+                labels.push($(this).data('name'));
+                colors.push($(this).data('color'));
+            });
+            var config = {
+                type: 'doughnut',
+                data: {
+                    datasets: [{
+                        data: datas,
+                        label: 'Categories',
+                        backgroundColor: colors
+                    }],
+                    labels: labels
+                },
+                options: {
+                    responsive: true,
+                    legend: {
+                        position: 'right',
+                        display: false
+                    },
+                    title: {
+                        display: true,
+                        text: 'Projects % by category'
+                    },
+                    animation: {
+                        animateScale: true,
+                        animateRotate: true
+                    }
+                }
+            };
+
+            var ctx = document.getElementById('chart').getContext('2d');
+            window.myDoughnut = new Chart(ctx, config);
+        }
     </script>
 </body>
 

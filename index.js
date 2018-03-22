@@ -3,7 +3,7 @@ const htmlToJson = require("html-to-json"),
   url = require("url"),
   events = require("events");
 
-var maxProject = 1800;
+var maxProject = 20;
 
 function getCurrentDate() {
   var date = new Date();
@@ -26,6 +26,16 @@ function sortByKey(array, key) {
     return y - x;
   });
 }
+
+var colors = [
+  "rgb(54, 162, 235)",
+  "rgb(75, 192, 192)",
+  "rgb(201, 203, 207)",
+  "rgb(255, 159, 64)",
+  "rgb(153, 102, 255)",
+  "rgb(255, 99, 132)",
+  "rgb(255, 205, 86)"
+];
 
 class Scrap {
   constructor() {
@@ -108,23 +118,20 @@ function jsonToHtml(res) {
   var htmlGroupResult = "<div id='accordion-category'>";
   Object.keys(grouped).forEach((element, index) => {
     var ordered = sortByKey(grouped[element], "votesCount");
+    var percent = (Math.round(ordered.length * 100 / results.length));
     if (index > 0)
       htmlGroupResult += "<hr/>";
     htmlGroupResult += `<div class='card'>
-    <div class='card-header' id='headingGroupCat-${index}' style='padding: 0.5rem;'>
+    <div class='card-header category' id='headingGroupCat-${index}' style='padding: 0.5rem;' data-name="${element}" data-percent="${ordered.length}" data-color="${colors[index]}">
     <h5 class='mb-0'>
-    <button class='btn btn-link' style='font-size: 0.9rem;' data-toggle='collapse' data-target='#cat-${index}' aria-expanded='true' aria-controls='cat-${index}'>${element} (${(ordered.length + " projects ~" + (Math.round(ordered.length * 100 / results.length)))}%)</button></h5>
+    <span class="dot" style="background-color: ${colors[index]}"></span><button class='btn btn-link' style='font-size: 0.9rem;' data-toggle='collapse' data-target='#cat-${index}' aria-expanded='true' aria-controls='cat-${index}'>${element} <small>(<strong>${(ordered.length + "</strong> projects <strong>~" + percent)}%</strong>)</small></button></h5>
     </div>
     <div id="cat-${index}" class="collapse" aria-labelledby="headingGroupCat">
       <div class="card-body">`;
-    htmlGroupResult += "<table class='table table-striped resultsByCategory'><thead class='thead-dark'><tr><th scope='col'>#</th><th scope='col'>Vote</th><th scope='col'>Project</th><th scope='col'>Company</th><th scope='col'><small>Date: " +
-      currentDate +
-      "</small></th></tr></thead>";
+    htmlGroupResult += "<table class='table table-striped table-fixed resultsByCategory'><thead class='thead-dark'><tr><th scope='col'>#</th><th scope='col'>Vote</th><th scope='col'>Project</th><th scope='col'>Company</th><th scope='col'></th></tr></thead>";
     for (var i = 0; i < ordered.length; i++) {
       var orga = ordered[i].organisation.toLowerCase();
-      htmlGroupResult += "<tr class='" +
-        (orga == "courseur" || orga == "jeanne rives"
-          ? "table-danger" : "") + "'><th scope='row'>" + (i + 1) + "</th><td>" +
+      htmlGroupResult += "<tr><th scope='row'>" + (i + 1) + "</th><td>" +
         ordered[i].votesCount +
         "</td><td>" +
         ordered[i].project +
@@ -140,17 +147,11 @@ function jsonToHtml(res) {
 
   var totalVote = 0;
   var htmlResult =
-    "<table id='resultsAll' class='table table-striped'><thead class='thead-dark'><tr><th scope='col'>#</th><th scope='col'>Vote</th><th scope='col'>Project</th><th scope='col'>Company</th><th scope='col'>Category</th><th scope='col'><small>Date: " +
-    currentDate +
-    "</small></th></tr></thead>";
+    "<table id='resultsAll' class='table table-striped table-fixed'><thead class='thead-dark'><tr><th scope='col'>#</th><th scope='col'>Vote</th><th scope='col'>Project</th><th scope='col'>Company</th><th scope='col'>Category</th><th scope='col'></th></tr></thead>";
   for (var i = 0; i < results.length; i++) {
     var orga = results[i].organisation.toLowerCase();
     htmlResult +=
-      "<tr class='" +
-      (orga == "courseur" || orga == "jeanne rives"
-        ? "table-danger"
-        : "") +
-      "'><th scope='row'>" +
+      "<tr><th scope='row'>" +
       (i + 1) +
       "</th><td>" +
       results[i].votesCount +
@@ -168,9 +169,21 @@ function jsonToHtml(res) {
   }
   htmlResult += "</table>";
 
-  var totalProjects = new Number(results.length);
-  var totalVotes = new Number(totalVote);
+  var totalProjects = new Number(results.length).toLocaleString('fr-FR');
+  var totalVotes = new Number(totalVote).toLocaleString('fr-FR');
   var finalResult = `
+  <div class="row">
+  <div class="col-5">
+  <dl class="row">
+  <dt class="col-sm-3">Last update</dt>
+  <dd class="col-sm-9">${currentCorrectDate}</dd>
+  <dt class="col-sm-3">Projects</dt>
+  <dd class="col-sm-9">${totalProjects}</dd>
+  <dt class="col-sm-3">Votes</dt>
+  <dd class="col-sm-9">${totalVotes}</dd>
+  </dl>
+  </div>
+  </div>
   <div id="accordion">
     <div class="card">
       <div class="card-header" id="headingGroup">
@@ -178,12 +191,19 @@ function jsonToHtml(res) {
           <button class="btn btn-link" data-toggle="collapse" data-target="#groups" aria-expanded="true" aria-controls="groups">
             Group by Category
           </button>
-          <small class="float-right">${currentCorrectDate}</small>
+          <small class="float-right">Last update: ${currentCorrectDate}</small>
         </h5>
       </div>
       <div id="groups" class="collapse" aria-labelledby="headingGroup">
         <div class="card-body">
+        <div class="row">
+        <div class="col-7">
           ${htmlGroupResult}
+          </div>
+          <div class="col-5">
+          <canvas id="chart"></canvas>
+          </div>
+        </div>
         </div>
       </div>
     </div>
@@ -192,9 +212,9 @@ function jsonToHtml(res) {
       <div class="card-header" id="headingList">
         <h5 class="mb-0">
           <button class="btn btn-link" data-toggle="collapse" data-target="#lists" aria-expanded="true" aria-controls="lists">
-            All projects (${totalProjects.toLocaleString('fr-FR')} projects - ${totalVotes.toLocaleString('fr-FR')} votes)
+            All projects <small>(<strong>${totalProjects}</strong> projects - <strong>${totalVotes}</strong> votes)</small>
           </button>
-          <small class="float-right">${currentCorrectDate}</small>
+          <small class="float-right">Last update: ${currentCorrectDate}</small>
         </h5>
       </div>
       <div id="lists" class="collapse" aria-labelledby="headingList">
