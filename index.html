@@ -3,7 +3,8 @@
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <title>LaFabrique AVIVA - Stats</title>
+    <link id="Favicon" rel="shortcut icon" href="https://lafabrique-france.aviva.com/cms/Sitefinity/WebsiteTemplates/ACFTemplate/App_Themes/France/global/favicon.ico">
+    <title>La Fabrique Aviva - Voting stats</title>
     <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm"
         crossorigin="anonymous">
     <script src="https://code.jquery.com/jquery-3.3.1.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8="
@@ -16,6 +17,88 @@
         body {
             padding-top: 10px;
         }
+
+        a,
+        a:hover,
+        a:active,
+        a:focus,
+        .btn-link,
+        .btn-link:hover,
+        .btn-link:active,
+        .btn-link:focus {
+            color: #f14d09;
+            text-decoration: none;
+        }
+
+        a.btn-light {
+            background: #ffd900;
+            box-shadow: 0 2px 0 0 #d3b300;
+            color: #004fb6;
+            border: none;
+        }
+
+        a.btn-light:hover {
+            background: #004fb6;
+            box-shadow: 0 2px 0 0 #004fb6;
+            color: #ffffff;
+            border: none;
+        }
+
+        h1.h2 {
+            color: #004fb6;
+        }
+
+        #accordion>.card>.card-header>h5>button {
+            text-transform: uppercase;
+        }
+
+        #accordion>.card>.card-header>h5>small {
+            font-size: 60%;
+            color: #b3b3b3;
+        }
+
+        #accordion>.card>.card-header {
+            background-color: #ffd900;
+        }
+
+        .card-header h5 button.btn-link,
+        .card-header h5 button.btn-link:hover,
+        .card-header h5 button.btn-link:active,
+        .card-header h5 button.btn-link:focus {
+            color: #004fb6;
+        }
+
+        .footer {
+            margin-top: 20px;
+            width: 100%;
+            height: 40px;
+            line-height: 40px;
+            background-color: #f5f5f5;
+            font-size: .8rem;
+        }
+
+        .thumbnail {
+            position: relative;
+            width: 200px;
+            height: 200px;
+            overflow: hidden;
+        }
+
+        .thumbnail img {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            height: 100%;
+            width: auto;
+            -webkit-transform: translate(-50%, -50%);
+            -ms-transform: translate(-50%, -50%);
+            transform: translate(-50%, -50%);
+        }
+
+        .thumbnail img.portrait {
+            width: 100%;
+            height: auto;
+        }
     </style>
 </head>
 
@@ -24,7 +107,9 @@
         <div class="row">
             <main class="col-md-12 ml-sm-auto pt-3 px-4" role="main">
                 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-3 border-bottom">
-                    <h1 class="h2">LaFabrique AVIVA - Stats</h1>
+                    <h1 class="h2">
+                        <img width="300" src="https://lafabrique-france.aviva.com/cms/Sitefinity/WebsiteTemplates/ACFTemplate/App_Themes/France/images/logo/logo.png?v=567488"
+                        /> La Fabrique Aviva - Voting stats</h1>
                     <div class="btn-toolbar mb-2 mb-md-0">
                         <form class="form-inline">
                             <input id="search" class="form-control mr-sm-2" type="search" placeholder="Search..." aria-label="Search">
@@ -34,38 +119,55 @@
                 </div>
                 <div class="row">
                     <div class="col-12" id="results">
-                        <div class="progress" style="height: 30px;">
-                            <div class="progress-bar progress-bar-striped progress-bar-animated bg-danger" role="progressbar" aria-valuemax="100" aria-valuemin="0"
-                                aria-valuenow="1"></div>
-                        </div>
+                        <!-- DATA -->
                     </div>
                 </div>
             </main>
         </div>
     </div>
+    <footer class="footer">
+        <div class="container-fluid text-center">
+            <span class="text-muted">
+                <small>"Quick&amp;Dirty"</small> by
+                <a href="http://plsgd.com" target="_blank">Plsgd</a>
+            </span>
+        </div>
+    </footer>
     <script>
         var max = 1800;
+        var wto;
         $(function () {
-            $("#search").hide();
+            if ($("table").length > 0) {
+                $("#search").show();
+                $(".progress").hide();
+            }
+            else {
+                $("#search").hide();
+                $(".progress").show();
+            }
             $("#search").on("input", function (e) {
                 var searchVal = $(this).val().trim().toLowerCase();
-                if (searchVal === '') {
-                    $('.resultsByCategory tbody tr').show();
-                    $('#resultsAll tbody tr').show();
-                    $('.collapse').collapse('hide')
+                $('.resultsByCategory tbody tr').show();
+                $('#resultsAll tbody tr').show();
+                $('.collapse').collapse('hide')
+
+                if (searchVal !== '') {
+                    clearTimeout(wto);
+                    wto = setTimeout(function () {
+                        $('.resultsByCategory tbody tr').filter(function () {
+                            return $(this).find('td').eq(1).text().toLowerCase().indexOf(searchVal) < 0 && $(this).find('td').eq(2).text().toLowerCase().indexOf(searchVal) < 0;
+                        }).hide();
+                        $('#resultsAll tbody tr').filter(function () {
+                            return $(this).find('td').eq(1).text().toLowerCase().indexOf(searchVal) < 0 && $(this).find('td').eq(2).text().toLowerCase().indexOf(searchVal) < 0;
+                        }).hide();
+                        $('.collapse').collapse('show')
+                    }, 1000);
                 }
-                else {
-                    $('.resultsByCategory tbody tr').filter(function () {
-                        return $(this).find('td').eq(1).text().toLowerCase().indexOf(searchVal) < 0 && $(this).find('td').eq(2).text().toLowerCase().indexOf(searchVal) < 0;
-                    }).hide();
-                    $('#resultsAll tbody tr').filter(function () {
-                        return $(this).find('td').eq(1).text().toLowerCase().indexOf(searchVal) < 0 && $(this).find('td').eq(2).text().toLowerCase().indexOf(searchVal) < 0;
-                    }).hide();
-                    $('.collapse').collapse('show')
-                }
+
             });
             $("#reload").on("click", function (e) {
                 e.preventDefault();
+                $("#search").hide();
                 var $this = $(this);
                 $this.attr("disabled", "");
                 $.ajax({
@@ -73,28 +175,31 @@
                     url: "/stats",
                     timeout: max * 300,
                     success: function (data) {
-                        $("#results").html(data);
-                        $("#search").show();
-                        $("#reload").hide();
+                        $("#results").html(`<div class="progress" style="height: 30px;">
+                            <div class="progress-bar progress-bar-striped progress-bar-animated bg-danger" role="progressbar" aria-valuemax="100" aria-valuemin="0"
+                                aria-valuenow="1"></div>
+                        </div>
+                        <hr/>
+                        <div class="alert alert-warning"><p>Please wait a little bit. Do not close or reload the page.</p></div>`);
+                        var max = parseInt(data);
+                        var i = 1;
+                        var inter = setInterval(function () {
+                            if (i <= max) {
+                                $(".progress-bar").width((i * 100 / max) + '%');
+                                i++;
+                            }
+                            else {
+                                $(".progress-bar").width('100%');
+                                clearInterval(inter);
+                                location.href = "/";
+                            }
+                        }, 250);
                     },
                     error: function (jqXHR, textStatus, errorThrown) {
                         $("#results").html("<h2 class=\"text-danger\">" + errorThrown + "</h2>");
-                    },
-                    complete: function () {
-                        $this.removeAttr("disabled");
                     }
                 });
-                var i = 1;
-                var inter = setInterval(function () {
-                    if (i <= max) {
-                        $(".progress-bar").width((i * 100 / max) + '%');
-                        i++;
-                    }
-                    else {
-                        $(".progress-bar").width('100%');
-                        clearInterval(inter);
-                    }
-                }, 150);
+
             });
         });
     </script>

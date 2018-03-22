@@ -29,9 +29,8 @@ function sortByKey(array, key) {
 
 class Scrap {
   constructor() {
-    //this.activeProjects = Object.values(JSON.parse(fs.readFileSync("projects.json", "utf-8")));
-    this.min = 1;//this.activeProjects != null && this.activeProjects.length > 0 ? 0 : 1;
-    this.max = maxProject//this.activeProjects.length;//this.activeProjects != null && this.activeProjects.length > 0 ? this.activeProjects.length - 1 : maxProject;
+    this.min = 1;
+    this.max = maxProject;
     this.projects = [];
   }
 
@@ -42,15 +41,12 @@ class Scrap {
 
   async scrapProjects() {
     var that = this;
-    // fs.writeFile("./projects.json", "[");
     for (var i = that.min; i <= that.max; i++) {
-      let result = await this.getProject(i/*that.activeProjects[i]*/);
+      let result = await this.getProject(i);
       if (result.project != "") {
         that.projects.push(result);
-        // fs.appendFile("./projects.json", "," + i);
       }
     }
-    // fs.appendFile("./projects.json", "]");
     return that.projects;
   }
 
@@ -98,6 +94,148 @@ class Scrap {
   }
 }
 
+function jsonToHtml(res) {
+  var groupRes = sortByKey(res, "category");
+  var grouped = groupRes.reduce(function (result, current) {
+    result[current.category] = result[current.category] || [];
+    result[current.category].push(current);
+    return result;
+  }, {});
+  var currentDate = getCurrentDate();
+  var currentCorrectDate = new Date(Date.now()).toLocaleString('fr-FR');
+  var results = sortByKey(res, "votesCount");
+
+  var htmlGroupResult = "<div id='accordion-category'>";
+  Object.keys(grouped).forEach((element, index) => {
+    var ordered = sortByKey(grouped[element], "votesCount");
+    if (index > 0)
+      htmlGroupResult += "<hr/>";
+    htmlGroupResult += `<div class='card'>
+    <div class='card-header' id='headingGroupCat-${index}' style='padding: 0.5rem;'>
+    <h5 class='mb-0'>
+    <button class='btn btn-link' style='font-size: 0.9rem;' data-toggle='collapse' data-target='#cat-${index}' aria-expanded='true' aria-controls='cat-${index}'>${element} (${(ordered.length + " projects ~" + (Math.round(ordered.length * 100 / results.length)))}%)</button></h5>
+    </div>
+    <div id="cat-${index}" class="collapse" aria-labelledby="headingGroupCat">
+      <div class="card-body">`;
+    htmlGroupResult += "<table class='table table-striped resultsByCategory'><thead class='thead-dark'><tr><th scope='col'>#</th><th scope='col'>Vote</th><th scope='col'>Project</th><th scope='col'>Company</th><th scope='col'><small>Date: " +
+      currentDate +
+      "</small></th></tr></thead>";
+    for (var i = 0; i < ordered.length; i++) {
+      var orga = ordered[i].organisation.toLowerCase();
+      htmlGroupResult += "<tr class='" +
+        (orga == "courseur" || orga == "jeanne rives"
+          ? "table-danger" : "") + "'><th scope='row'>" + (i + 1) + "</th><td>" +
+        ordered[i].votesCount +
+        "</td><td>" +
+        ordered[i].project +
+        "</td><td>" +
+        ordered[i].organisation +
+        "</td><td><a href='" +
+        ordered[i].url +
+        "' target='_blank' class='btn btn-light'>Open</a></td></tr>";
+    }
+    htmlGroupResult += "</table></div></div></div>";
+  });
+  htmlGroupResult += "</div>";
+
+  var totalVote = 0;
+  var htmlResult =
+    "<table id='resultsAll' class='table table-striped'><thead class='thead-dark'><tr><th scope='col'>#</th><th scope='col'>Vote</th><th scope='col'>Project</th><th scope='col'>Company</th><th scope='col'>Category</th><th scope='col'><small>Date: " +
+    currentDate +
+    "</small></th></tr></thead>";
+  for (var i = 0; i < results.length; i++) {
+    var orga = results[i].organisation.toLowerCase();
+    htmlResult +=
+      "<tr class='" +
+      (orga == "courseur" || orga == "jeanne rives"
+        ? "table-danger"
+        : "") +
+      "'><th scope='row'>" +
+      (i + 1) +
+      "</th><td>" +
+      results[i].votesCount +
+      "</td><td>" +
+      results[i].project +
+      "</td><td>" +
+      results[i].organisation +
+      "</td><td>" +
+      results[i].category +
+      "</td><td><a href='" +
+      results[i].url +
+      "' target='_blank' class='btn btn-light'>Open</a></td></tr>";
+
+    totalVote += results[i].votesCount;
+  }
+  htmlResult += "</table>";
+
+  var totalProjects = new Number(results.length);
+  var totalVotes = new Number(totalVote);
+  var finalResult = `
+  <div id="accordion">
+    <div class="card">
+      <div class="card-header" id="headingGroup">
+        <h5 class="mb-0">
+          <button class="btn btn-link" data-toggle="collapse" data-target="#groups" aria-expanded="true" aria-controls="groups">
+            Group by Category
+          </button>
+          <small class="float-right">${currentCorrectDate}</small>
+        </h5>
+      </div>
+      <div id="groups" class="collapse" aria-labelledby="headingGroup">
+        <div class="card-body">
+          ${htmlGroupResult}
+        </div>
+      </div>
+    </div>
+    <hr/>
+    <div class="card">
+      <div class="card-header" id="headingList">
+        <h5 class="mb-0">
+          <button class="btn btn-link" data-toggle="collapse" data-target="#lists" aria-expanded="true" aria-controls="lists">
+            All projects (${totalProjects.toLocaleString('fr-FR')} projects - ${totalVotes.toLocaleString('fr-FR')} votes)
+          </button>
+          <small class="float-right">${currentCorrectDate}</small>
+        </h5>
+      </div>
+      <div id="lists" class="collapse" aria-labelledby="headingList">
+        <div class="card-body">
+          ${htmlResult}
+        </div>
+      </div>
+    </div>
+  </div>`;
+
+  return finalResult;
+}
+
+function injectResults(html, response) {
+  fs.readFile("./index.html", 'utf-8', function (err, file) {
+    if (err) {
+      console.log(err);
+      return;
+    }
+    response.writeHead(200, { "Content-Type": "text/html" });
+
+    if (html != null) {
+      file.replace("<!-- DATA -->", html);
+      response.end(file, "utf-8");
+    }
+    else if (fs.existsSync("./datas/data.json")) {
+      fs.readFile("./datas/data.json", 'utf-8', function (err, jsonFile) {
+        if (err) {
+          console.log(err);
+          return;
+        }
+        var finalResult = jsonToHtml(JSON.parse(jsonFile));
+        finalResult = file.replace("<!-- DATA -->", finalResult);
+        response.end(finalResult, "utf-8");
+      });
+    } else {
+      response.end(file, "utf-8");
+    }
+  });
+}
+
 var http = require("http");
 
 var server = http.createServer(function (request, response) {
@@ -109,119 +247,12 @@ var server = http.createServer(function (request, response) {
     var scrap = new Scrap();
     var that = this;
     scrap.scrapProjects().then(res => {
-      var groupRes = sortByKey(res, "category");
-      var grouped = groupRes.reduce(function (result, current) {
-        result[current.category] = result[current.category] || [];
-        result[current.category].push(current);
-        return result;
-      }, {});
-      var currentDate = getCurrentDate();
-      var results = sortByKey(res, "votesCount");
-
-      var htmlGroupResult = "<div id='accordion-category'>";
-      Object.keys(grouped).forEach((element, index) => {
-        var ordered = sortByKey(grouped[element], "votesCount");
-        htmlGroupResult += `<div class='card'>
-        <div class='card-header' id='headingGroupCat-${index}' style='padding: 0.5rem;'>
-        <h5 class='mb-0'>
-        <button class='btn btn-link' style='font-size: 0.9rem;' data-toggle='collapse' data-target='#cat-${index}' aria-expanded='true' aria-controls='cat-${index}'>${element} (${(ordered.length + " projects ~" + (Math.round(ordered.length * 100 / results.length)))}%)</button></h5>
-        </div>
-        <div id="cat-${index}" class="collapse" aria-labelledby="headingGroupCat">
-          <div class="card-body">`;
-        htmlGroupResult += "<table class='table table-striped resultsByCategory'><thead class='thead-dark'><tr><th scope='col'>#</th><th scope='col'>Vote</th><th scope='col'>Project</th><th scope='col'>Company</th><th scope='col'><small>Date: " +
-          currentDate +
-          "</small></th></tr></thead>";
-        for (var i = 0; i < ordered.length; i++) {
-          var orga = ordered[i].organisation.toLowerCase();
-          htmlGroupResult += "<tr class='" +
-            (orga == "courseur" || orga == "jeanne rives"
-              ? "table-danger" : "") + "'><th scope='row'>" + (i + 1) + "</th><td>" +
-            ordered[i].votesCount +
-            "</td><td>" +
-            ordered[i].project +
-            "</td><td>" +
-            ordered[i].organisation +
-            "</td><td><a href='" +
-            ordered[i].url +
-            "' target='_blank' class='btn btn-light'>Open</a></td></tr>";
-        }
-        htmlGroupResult += "</table></div></div></div><hr/>";
-      });
-      htmlGroupResult += "</div>";
-
-      var totalVote = 0;
-      var htmlResult =
-        "<table id='resultsAll' class='table table-striped'><thead class='thead-dark'><tr><th scope='col'>#</th><th scope='col'>Vote</th><th scope='col'>Project</th><th scope='col'>Company</th><th scope='col'>Category</th><th scope='col'><small>Date: " +
-        currentDate +
-        "</small></th></tr></thead>";
-      for (var i = 0; i < results.length; i++) {
-        var orga = results[i].organisation.toLowerCase();
-        htmlResult +=
-          "<tr class='" +
-          (orga == "courseur" || orga == "jeanne rives"
-            ? "table-danger"
-            : "") +
-          "'><th scope='row'>" +
-          (i + 1) +
-          "</th><td>" +
-          results[i].votesCount +
-          "</td><td>" +
-          results[i].project +
-          "</td><td>" +
-          results[i].organisation +
-          "</td><td>" +
-          results[i].category +
-          "</td><td><a href='" +
-          results[i].url +
-          "' target='_blank' class='btn btn-light'>Open</a></td></tr>";
-
-        totalVote += results[i].votesCount;
-      }
-      htmlResult += "</table>";
-
-      var finalResult = `
-      <div id="accordion">
-        <div class="card">
-          <div class="card-header" id="headingGroup" style="background-color: rgba(0,0,0,.07);">
-            <h5 class="mb-0">
-              <button class="btn btn-link" data-toggle="collapse" data-target="#groups" aria-expanded="true" aria-controls="groups">
-                Group by Category
-              </button>
-            </h5>
-          </div>
-          <div id="groups" class="collapse" aria-labelledby="headingGroup">
-            <div class="card-body">
-              ${htmlGroupResult}
-            </div>
-          </div>
-        </div>
-        <hr/>
-        <div class="card">
-          <div class="card-header" id="headingList" style="background-color: rgba(0,0,0,.07);">
-            <h5 class="mb-0">
-              <button class="btn btn-link" data-toggle="collapse" data-target="#lists" aria-expanded="true" aria-controls="lists">
-                All projects (${results.length} projects - ${totalVote} votes)
-              </button>
-            </h5>
-          </div>
-          <div id="lists" class="collapse" aria-labelledby="headingList">
-            <div class="card-body">
-              ${htmlResult}
-            </div>
-          </div>
-        </div>
-      </div>`
-      response.end(finalResult, "utf-8");
+      var finalResult = jsonToHtml(res);
+      fs.writeFile("./datas/data.json", JSON.stringify(res));
     });
+    response.end(maxProject.toString(), "utf-8");
   } else {
-    fs.readFile("./index.html", function (err, file) {
-      if (err) {
-        console.log(err);
-        return;
-      }
-      response.writeHead(200, { "Content-Type": "text/html" });
-      response.end(file, "utf-8");
-    });
+    injectResults(null, response);
   }
 });
 
