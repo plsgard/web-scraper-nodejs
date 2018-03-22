@@ -138,7 +138,8 @@ module.exports = class Scrap {
             var progression = increase / prevVote * 100;
             if (progression > bestProgression) {
                 bestProgressionProject.name = results[i].project;
-                bestProgressionProject.votes = increase;
+                bestProgressionProject.increase = increase;
+                bestProgressionProject.votes = results[i].votesCount;
                 bestProgressionProject.progression = Number.parseFloat(progression).toFixed(2);
                 bestProgression = progression;
             }
@@ -186,7 +187,7 @@ module.exports = class Scrap {
         <dt class="col-sm-4">1st</dt>
         <dd class="col-sm-8">${results[0].project} (${results[0].votesCount.toLocaleString('fr-FR')} votes)</dd>
         <dt class="col-sm-4">Best progression</dt>
-        <dd class="col-sm-8">${bestProgressionProject.name} (+${bestProgressionProject.votes} ~${bestProgressionProject.progression}%)</dd>
+        <dd class="col-sm-8">${bestProgressionProject.name} (${bestProgressionProject.votes} votes: +${bestProgressionProject.increase} ~${bestProgressionProject.progression}%)</dd>
         </dl>
         </div>
         </div>
