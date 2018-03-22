@@ -3,7 +3,7 @@ const htmlToJson = require("html-to-json"),
   url = require("url"),
   events = require("events");
 
-var maxProject = 20;
+var maxProject = 1800;
 
 function getCurrentDate() {
   var date = new Date();
@@ -66,6 +66,9 @@ class Scrap {
         uri: "https://lafabrique-france.aviva.com/voting/projet/vue/30-" + id
       },
       {
+        id: function () {
+          return id;
+        },
         project: function ($project) {
           return $project
             .find(".project-details h1")
@@ -104,15 +107,15 @@ class Scrap {
   }
 }
 
-function jsonToHtml(res) {
+function jsonToHtml(res, date, prev, prevDate) {
   var groupRes = sortByKey(res, "category");
   var grouped = groupRes.reduce(function (result, current) {
     result[current.category] = result[current.category] || [];
     result[current.category].push(current);
     return result;
   }, {});
-  var currentDate = getCurrentDate();
-  var currentCorrectDate = new Date(Date.now()).toLocaleString('fr-FR');
+  var currentCorrectDate = new Date(date).toLocaleString('fr-FR');
+  var prevCorrectDate = prevDate != null ? new Date(prevDate).toLocaleString('fr-FR') : null;
   var results = sortByKey(res, "votesCount");
 
   var htmlGroupResult = "<div id='accordion-category'>";
@@ -128,11 +131,18 @@ function jsonToHtml(res) {
     </div>
     <div id="cat-${index}" class="collapse" aria-labelledby="headingGroupCat">
       <div class="card-body">`;
-    htmlGroupResult += "<table class='table table-striped table-fixed resultsByCategory'><thead class='thead-dark'><tr><th scope='col'>#</th><th scope='col'>Vote</th><th scope='col'>Project</th><th scope='col'>Company</th><th scope='col'></th></tr></thead>";
+    htmlGroupResult += "<table class='table table-striped table-fixed resultsByCategory'><thead class='thead-dark'><tr><th scope='col'>#</th><th scope='col' style='min-width:120px;'>Vote</th><th scope='col'>Project</th><th scope='col'>Company</th><th scope='col'></th></tr></thead>";
     for (var i = 0; i < ordered.length; i++) {
-      var orga = ordered[i].organisation.toLowerCase();
+      var prevVote = 0;
+      if (prev != null) {
+        var p = prev.find(x => x.id == ordered[i].id);
+        if (p != null) {
+          prevVote = p.votesCount;
+        }
+      }
+      var increase = ordered[i].votesCount - prevVote;
       htmlGroupResult += "<tr><th scope='row'>" + (i + 1) + "</th><td>" +
-        ordered[i].votesCount +
+        ordered[i].votesCount.toLocaleString('fr-FR') + (prevVote > 0 ? "<br/><small>(+" + increase + " ~" + Number.parseFloat(increase / prevVote * 100).toFixed(2) + "%)</small>" : "") +
         "</td><td>" +
         ordered[i].project +
         "</td><td>" +
@@ -146,15 +156,29 @@ function jsonToHtml(res) {
   htmlGroupResult += "</div>";
 
   var totalVote = 0;
+  var bestProgression = 0;
+  var bestProgressionProject;
   var htmlResult =
-    "<table id='resultsAll' class='table table-striped table-fixed'><thead class='thead-dark'><tr><th scope='col'>#</th><th scope='col'>Vote</th><th scope='col'>Project</th><th scope='col'>Company</th><th scope='col'>Category</th><th scope='col'></th></tr></thead>";
+    "<table id='resultsAll' class='table table-striped table-fixed'><thead class='thead-dark'><tr><th scope='col'>#</th><th scope='col' style='min-width:120px;'>Vote</th><th scope='col'>Project</th><th scope='col'>Company</th><th scope='col'>Category</th><th scope='col'></th></tr></thead>";
   for (var i = 0; i < results.length; i++) {
-    var orga = results[i].organisation.toLowerCase();
+    var prevVote = 0;
+    if (prev != null) {
+      var p = prev.find(x => x.id == results[i].id);
+      if (p != null) {
+        prevVote = p.votesCount;
+      }
+    }
+    var increase = results[i].votesCount - prevVote;
+    var progression = increase / prevVote * 100;
+    if (progression > bestProgression) {
+      bestProgressionProject = results[i].project;
+      bestProgression = progression;
+    }
     htmlResult +=
       "<tr><th scope='row'>" +
       (i + 1) +
       "</th><td>" +
-      results[i].votesCount +
+      results[i].votesCount.toLocaleString('fr-FR') + (prevVote > 0 ? "<br/><small>(+" + increase + " ~<span class='increase'>" + Number.parseFloat(progression).toFixed(2) + "</span>%)</small>" : "") +
       "</td><td>" +
       results[i].project +
       "</td><td>" +
@@ -173,14 +197,28 @@ function jsonToHtml(res) {
   var totalVotes = new Number(totalVote).toLocaleString('fr-FR');
   var finalResult = `
   <div class="row">
-  <div class="col-5">
+  <div class="col-4">
   <dl class="row">
-  <dt class="col-sm-3">Last update</dt>
-  <dd class="col-sm-9">${currentCorrectDate}</dd>
+  <dt class="col-sm-4">Last update</dt>
+  <dd class="col-sm-8">${currentCorrectDate}</dd>
+  <dt class="col-sm-4">Previous update</dt>
+  <dd class="col-sm-8">${prevCorrectDate}</dd>
+  </dl>
+  </div>
+  <div class="col-3">
+  <dl class="row">
   <dt class="col-sm-3">Projects</dt>
   <dd class="col-sm-9">${totalProjects}</dd>
   <dt class="col-sm-3">Votes</dt>
   <dd class="col-sm-9">${totalVotes}</dd>
+  </dl>
+  </div>
+  <div class="col-5">
+  <dl class="row">
+  <dt class="col-sm-4">1st</dt>
+  <dd class="col-sm-8">${results[0].project}</dd>
+  <dt class="col-sm-4">Best progression</dt>
+  <dd class="col-sm-8">${bestProgressionProject}</dd>
   </dl>
   </div>
   </div>
@@ -246,9 +284,26 @@ function injectResults(html, response) {
           console.log(err);
           return;
         }
-        var finalResult = jsonToHtml(JSON.parse(jsonFile));
-        finalResult = file.replace("<!-- DATA -->", finalResult);
-        response.end(finalResult, "utf-8");
+
+        var stats = fs.statSync("./datas/data.json");
+        var date = stats.mtime != null ? stats.mtime : stats.birthtime;
+        if (fs.existsSync("./datas/data_prev.json")) {
+          fs.readFile("./datas/data_prev.json", 'utf-8', function (err, prevFile) {
+            if (err) {
+              console.log(err);
+              return;
+            }
+            var prevStats = fs.statSync("./datas/data_prev.json");
+            var prevDate = prevStats.mtime != null ? prevStats.mtime : prevStats.birthtime;
+            var finalResult = jsonToHtml(JSON.parse(jsonFile), date, JSON.parse(prevFile), prevDate);
+            finalResult = file.replace("<!-- DATA -->", finalResult);
+            response.end(finalResult, "utf-8");
+          });
+        } else {
+          var finalResult = jsonToHtml(JSON.parse(jsonFile), date);
+          finalResult = file.replace("<!-- DATA -->", finalResult);
+          response.end(finalResult, "utf-8");
+        }
       });
     } else {
       response.end(file, "utf-8");
@@ -266,8 +321,8 @@ var server = http.createServer(function (request, response) {
 
     var scrap = new Scrap();
     var that = this;
+    fs.copyFileSync('./datas/data.json', './datas/data_prev.json');
     scrap.scrapProjects().then(res => {
-      var finalResult = jsonToHtml(res);
       fs.writeFile("./datas/data.json", JSON.stringify(res));
     });
     response.end(maxProject.toString(), "utf-8");
