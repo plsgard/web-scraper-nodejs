@@ -136,7 +136,7 @@ module.exports = class Scrap {
             }
             var increase = results[i].votesCount - prevVote;
             var progression = increase / prevVote * 100;
-            if (progression > bestProgression) {
+            if (progression !== Number.POSITIVE_INFINITY && progression > bestProgression) {
                 bestProgressionProject.name = results[i].project;
                 bestProgressionProject.increase = increase;
                 bestProgressionProject.votes = results[i].votesCount;
